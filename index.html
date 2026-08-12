@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastTap ⚡</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+        }
+        h1 { color: #00e676; margin-bottom: 10px; }
+        .score-board {
+            font-size: 24px;
+            margin: 15px 0;
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .tap-btn {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(145deg, #00e676, #00b0ff);
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            box-shadow: 0 8px 20px rgba(0,230,118,0.4);
+            cursor: pointer;
+            transition: transform 0.1s;
+            margin: 20px auto;
+            display: block;
+        }
+        .tap-btn:active { transform: scale(0.92); }
+        .ad-section {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .ad-btn {
+            background-color: #2979ff;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(41,121,255,0.3);
+        }
+        .ad-btn.boost { background-color: #ff9100; box-shadow: 0 4px 8px rgba(255,145,0,0.3); }
+        #toast {
+            visibility: hidden;
+            min-width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 12px;
+            position: fixed;
+            z-index: 1;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+    </style>
+</head>
+<body>
+
+    <h1>FastTap ⚡</h1>
+    
+    <div class="score-board">
+        النقاط / العملات: <span id="coins">0</span> 🪙
+    </div>
+
+    <button class="tap-btn" onclick="tapCoin()">اضغط! ⚡</button>
+
+    <div class="ad-section">
+        <button class="ad-btn" onclick="ftShowRewardedAd('coins')">
+            🎁 شاهد إعلانًا واحصل على +100 🪙
+        </button>
+        
+        <button class="ad-btn boost" onclick="ftShowRewardedAd('boost')">
+            ⚡ شاهد إعلانًا واحصل على مضاعف 2×
+        </button>
+    </div>
+
+    <div id="toast"></div>
+
+    <!-- =====================================================
+         FastTap ⚡ - AdMob & Android Bridge
+         ===================================================== -->
+    <script>
+        // حفظ النقاط باللعبة
+        let coins = parseInt(localStorage.getItem("fasttap_coins")) || 0;
+        let multiplier = 1;
+        document.getElementById("coins").innerText = coins;
+
+        function tapCoin() {
+            coins += (1 * multiplier);
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById("coins").innerText = coins;
+            localStorage.setItem("fasttap_coins", coins);
+        }
+
+        function showToast(msg) {
+            let t = document.getElementById("toast");
+            t.innerText = msg;
+            t.className = "show";
+            setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
+        }
+
+        /*
+          معرفات AdMob الحقيقية الخاصة بحسابك:
+          App ID: ca-app-pub-6216579901312801~4695606637
+          Rewarded: ca-app-pub-6216579901312801/8450380783
+          Interstitial: ca-app-pub-6216579901312801/3706792747
+        */
+
+        window.FastTapAndroid = window.FastTapAndroid || null;
+
+        function androidAvailable() {
+            return window.FastTapAndroid && typeof window.FastTapAndroid === "object";
+        }
+
+        /* استدعاء الإعلان بمكافأة */
+        window.ftShowRewardedAd = function (kind) {
+            kind = kind || "coins";
+            if (androidAvailable() && typeof window.FastTapAndroid.showRewardedAd === "function") {
+                window.FastTapAndroid.showRewardedAd(kind);
+            } else {
+                showToast("📱 الإعلان يعمل داخل تطبيق Android فقط");
+            }
+        };
+
+        /* استدعاء الإعلان البيني */
+        window.ftShowInterstitial = function () {
+            if (androidAvailable() && typeof window.FastTapAndroid.showInterstitial === "function") {
+                window.FastTapAndroid.showInterstitial();
+            } else {
+                showToast("📱 الإعلان يعمل داخل تطبيق Android فقط");
+            }
+        };
+
+        /* منح المكافأة للّاعب */
+        window.FastTapAdReward = function (type) {
+            if (type === "boost") {
+                multiplier = 2;
+                showToast("⚡ حصلت على مضاعف 2× للضغطات!");
+                setTimeout(() => { multiplier = 1; }, 30000); // يستمر 30 ثانية
+            } else {
+                coins += 100;
+                updateUI();
+                showToast("🎁 +100 عملة FastTap 🪙");
+            }
+        };
+    </script>
+</body>
+</html>
