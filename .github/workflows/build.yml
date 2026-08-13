@@ -19,6 +19,9 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Setup Android Project
         run: |
           mkdir -p app/src/main/assets
@@ -28,23 +31,36 @@ jobs:
           [ -f AndroidManifest.xml ] && cp AndroidManifest.xml app/src/main/AndroidManifest.xml || true
           [ -f MainActivity.kt ] && cp MainActivity.kt app/src/main/java/com/fasttap/app/MainActivity.kt || true
 
-          cat << 'EOF' > build.gradle
-          buildscript {
-              repositories { google(); mavenCentral() }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:8.1.1'
-                  classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10'
+          cat << 'EOF' > settings.gradle
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
               }
           }
-          allprojects { repositories { google(); mavenCentral() } }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "FastTap"
+          include ':app'
           EOF
 
-          echo "include ':app'" > settings.gradle
+          cat << 'EOF' > build.gradle
+          plugins {
+              id 'com.android.application' version '8.1.1' apply false
+              id 'org.jetbrains.kotlin.android' version '1.8.10' apply false
+          }
+          EOF
 
           cat << 'EOF' > app/build.gradle
           plugins {
               id 'com.android.application'
-              id 'kotlin-android'
+              id 'org.jetbrains.kotlin.android'
           }
 
           android {
@@ -63,7 +79,9 @@ jobs:
                   sourceCompatibility JavaVersion.VERSION_17
                   targetCompatibility JavaVersion.VERSION_17
               }
-              kotlinOptions { jvmTarget = '17' }
+              kotlinOptions {
+                  jvmTarget = '17'
+              }
           }
 
           dependencies {
@@ -74,11 +92,8 @@ jobs:
           }
           EOF
 
-      - name: Generate Wrapper
-        run: gradle wrapper
-
       - name: Build APK
-        run: ./gradlew assembleDebug
+        run: gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
