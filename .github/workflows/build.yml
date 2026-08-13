@@ -19,13 +19,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android Project
+      - name: Setup Android Project Files
         run: |
           mkdir -p app/src/main/assets
           mkdir -p app/src/main/java/com/fasttap/app
-          mkdir -p gradle/wrapper
 
-          # نقل وتحديث الملفات
+          # نقل وتنظيم الملفات لأماكن الأندرويد الصحيحة
           [ -f index.html ] && cp index.html app/src/main/assets/index.html || true
           [ -f AndroidManifest.xml ] && cp AndroidManifest.xml app/src/main/AndroidManifest.xml || true
           [ -f MainActivity.kt ] && cp MainActivity.kt app/src/main/java/com/fasttap/app/MainActivity.kt || true
@@ -50,7 +49,6 @@ jobs:
           }
           EOF
 
-          # إنشاء settings.gradle
           echo "include ':app'" > settings.gradle
 
           # إنشاء app/build.gradle
@@ -94,10 +92,12 @@ jobs:
           }
           EOF
 
-      - name: Build APK with Gradle
-        run: gradle assembleDebug
+      - name: Build APK using Gradle Action
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: assembleDebug
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: FastTap-APK
