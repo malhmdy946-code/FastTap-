@@ -19,39 +19,28 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android Project Files
+      - name: Setup Android Project
         run: |
           mkdir -p app/src/main/assets
           mkdir -p app/src/main/java/com/fasttap/app
 
-          # نقل وتنظيم الملفات لأماكن الأندرويد الصحيحة
           [ -f index.html ] && cp index.html app/src/main/assets/index.html || true
           [ -f AndroidManifest.xml ] && cp AndroidManifest.xml app/src/main/AndroidManifest.xml || true
           [ -f MainActivity.kt ] && cp MainActivity.kt app/src/main/java/com/fasttap/app/MainActivity.kt || true
 
-          # إنشاء build.gradle الرئيسي
           cat << 'EOF' > build.gradle
           buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
+              repositories { google(); mavenCentral() }
               dependencies {
                   classpath 'com.android.tools.build:gradle:8.1.1'
                   classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10'
               }
           }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
+          allprojects { repositories { google(); mavenCentral() } }
           EOF
 
           echo "include ':app'" > settings.gradle
 
-          # إنشاء app/build.gradle
           cat << 'EOF' > app/build.gradle
           plugins {
               id 'com.android.application'
@@ -70,18 +59,11 @@ jobs:
                   versionName "1.0"
               }
 
-              buildTypes {
-                  release {
-                      minifyEnabled false
-                  }
-              }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
                   targetCompatibility JavaVersion.VERSION_17
               }
-              kotlinOptions {
-                  jvmTarget = '17'
-              }
+              kotlinOptions { jvmTarget = '17' }
           }
 
           dependencies {
@@ -92,12 +74,13 @@ jobs:
           }
           EOF
 
-      - name: Build APK using Gradle Action
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: assembleDebug
+      - name: Generate Wrapper
+        run: gradle wrapper
 
-      - name: Upload APK Artifact
+      - name: Build APK
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: FastTap-APK
